@@ -1,0 +1,36 @@
+name: Check power outages
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        run: python main.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+
+      - name: Commit state
+        run: |
+          git config --global user.name "bot"
+          git config --global user.email "bot@example.com"
+          git add last_state.json || true
+          git commit -m "update state" || true
+          git push
