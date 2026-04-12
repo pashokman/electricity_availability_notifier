@@ -1,2 +1,2 @@
 # electricity_availability_notifier
-Notifies me when electricity should be missing
+Notifies me before electricity should be missing
