@@ -1,3 +1,5 @@
+from urllib import response
+
 import requests
 import hashlib
 import json
@@ -18,7 +20,8 @@ STATE_FILE = "last_state.json"
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+    response = requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+    print("Telegram response:", response.text)
 
 
 def send_telegram_photo(photo_url, caption=None):
@@ -26,7 +29,8 @@ def send_telegram_photo(photo_url, caption=None):
 
     data = {"chat_id": CHAT_ID, "photo": photo_url, "caption": caption or ""}
 
-    requests.post(url, data=data)
+    response = requests.post(url, data=data)
+    print("Telegram response:", response.text)
 
 
 def get_page_data():
@@ -43,7 +47,10 @@ def get_page_data():
         # image (table)
         img = page.locator("h2 + p + p img").first
         img_url = img.get_attribute("src") if img.count() > 0 else None
-        full_img_url = img_url if img_url.startswith("http") else "https://hoe.com.ua" + img_url
+        if img_url:
+            full_img_url = img_url if img_url.startswith("http") else "https://hoe.com.ua" + img_url
+        else:
+            full_img_url = None
 
         browser.close()
 
@@ -54,10 +61,7 @@ def get_image_hash(img_url):
     if not img_url:
         return None
 
-    if img_url.startswith("/"):
-        img_url = "https://hoe.com.ua" + img_url
-
-    response = requests.get(img_url)
+    response = requests.get(img_url, timeout=30)
     return hashlib.md5(response.content).hexdigest()
 
 
@@ -86,11 +90,11 @@ def main():
     changed = False
     message_parts = []
 
-    # text hash check
+    # text check
     if old_text != text:
         changed = True
         message_parts.append("📝 Є зміни в тексті:\n")
-        message_parts.append(text[:1000])  # щоб не було занадто довго
+        message_parts.append(text[:1000])
 
     # image hash check
     if old_hash != img_hash:
@@ -99,7 +103,11 @@ def main():
 
     if changed:
         message = "⚡ Оновлення графіку відключень!\n\n" + "\n".join(message_parts)
-        send_telegram_photo(img_url, message)
+
+        if img_url:
+            send_telegram_photo(img_url, message)
+        else:
+            send_telegram(message)
 
     # save new state
     save_state({"text": text, "img_hash": img_hash})
