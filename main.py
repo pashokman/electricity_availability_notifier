@@ -27,7 +27,6 @@ def send_telegram_photo(photo_url, caption=None):
     data = {"chat_id": CHAT_ID, "photo": photo_url, "caption": caption or ""}
 
     response = requests.post(url, data=data)
-    print("Telegram response:", response.text)
 
 
 def get_page_data():
