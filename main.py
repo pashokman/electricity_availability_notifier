@@ -88,24 +88,31 @@ def main():
     changed = False
     message_parts = []
 
+    text = text or ""
+    clean_text = text.strip()
+    no_outages = clean_text.startswith("Файли співставлення адрес")
+
     # text check
     if old_text != text:
         changed = True
-        message_parts.append("📝 Є зміни в тексті:\n")
-        message_parts.append(text[:1000])
+        if no_outages:
+            message_parts.append("✅ Сьогодні відключень не передбачено")
+        else:
+            message_parts.append("📝 Є зміни в тексті:\n")
+            message_parts.append(text[:1000])
 
     # image hash check
     if old_hash != img_hash:
         changed = True
-        message_parts.append("\n📊 Графік оновлено")
+        message_parts.append("📊 Графік оновлено")
 
     if changed:
         message = "⚡ Оновлення графіку відключень!\n\n" + "\n".join(message_parts)
 
-        if img_url:
-            send_telegram_photo(img_url, message)
-        else:
+        if no_outages or not img_url:
             send_telegram(message)
+        else:
+            send_telegram_photo(img_url, message)
 
     # save new state
     save_state({"text": text, "img_hash": img_hash})
